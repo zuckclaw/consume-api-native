@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Film Table</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  </head>
+  <body>
+    <div class="container">
+        <div class="row mb-3 mt-3">
+            <div class="col">
+                <h3>Table Film</h3>
+            </div>
+            <div class="col d-flex justify-content-end align-items-center">
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Tambah</button>
+
+                <!-- Modal Tambah -->
+                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header bg-success text-white">
+                        <h1 class="modal-title fs-5" id="exampleModalLabel">Tambah Film</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <form id="tambahFilm">
+                            <div class="mb-3">
+                              <label class="form-label">Judul Film</label>
+                              <input type="text" class="form-control" id="judulFilm" required>
+                            </div>
+                            <div class="mb-3">
+                              <label class="form-label">Sinopsis</label>
+                              <input type="text" class="form-control" id="sinopsis" required>
+                            </div>
+                            <div class="mb-3">
+                              <label class="form-label">Tahun Rilis</label>
+                              <input type="text" class="form-control" id="tahunRilis" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Submit</button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabel -->
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Judul Film</th>
+                    <th>Sinopsis</th>
+                    <th>Tahun Rilis</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="filmTable">
+                <tr>
+                    <td colspan="5" class="text-center">
+                        <div class="spinner-grow" role="status"><span class="visually-hidden">Loading...</span></div>
+                        <div class="spinner-grow" role="status"><span class="visually-hidden">Loading...</span></div>
+                        <div class="spinner-grow" role="status"><span class="visually-hidden">Loading...</span></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // render table
+        // render table
+function render(){
+    fetch("http://localhost:8000/api/film") // <-- ambil data film
+        .then(response => response.json())
+        .then(result => {
+            let filmTable = document.getElementById("filmTable");
+            let element = "";
+
+            if(result.status == 200){
+                if(result.data.length == 0){
+                    element = `
+                    <tr>
+                        <td colspan="5" class="text-center">Tidak ada Film</td>
+                    </tr>`;
+                } else {
+                    result.data.map((item, key) => {
+                        element += `
+                        <tr>
+                            <td>${key + 1}</td>
+                            <td>${item.judul}</td>
+                            <td>${item.sinopsis}</td>
+                            <td>${item.tahun_rilis}</td>
+                            <td>
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteFilm-${item.id}">DELETE</button>
+                                <div class="modal fade" id="deleteFilm-${item.id}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h1 class="modal-title fs-5">DELETE</h1>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">Apakah kamu yakin ingin menghapus film ini?</div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                <button type="button" class="btn btn-primary" onclick="deleteFilm(${item.id}, 'deleteFilm-${item.id}')">Ya</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>`;
+                    });
+                }
+                filmTable.innerHTML = element;
+            } else {
+                console.error(result.message);
+            }
+        })
+        .catch(error => console.error(error));
+}
+
+// delete film
+function deleteFilm(id, modalId){
+    fetch(`http://localhost:8000/api/film/destroy.php?id=${id}`, { // <-- pakai destroy.php
+        method: "DELETE"
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log(result);
+        render();
+
+        let modalEl = document.getElementById(modalId);
+        let modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+    })
+    .catch(error => console.error(error));
+}
+
+// tambah film
+document.getElementById("tambahFilm").addEventListener("submit", function(e){
+    e.preventDefault();
+
+    let judulFilm = document.getElementById("judulFilm").value;
+    let sinopsis  = document.getElementById("sinopsis").value;
+    let tahunRilis= document.getElementById("tahunRilis").value;
+
+    fetch("http://localhost:8000/api/film/store.php", { // <-- pakai store.php
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            judul: judulFilm,
+            sinopsis: sinopsis,
+            tahun_rilis: tahunRilis
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log(result);
+        render();
+
+        let modalEl = document.getElementById("exampleModal");
+        let modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+        document.getElementById("tambahFilm").reset();
+    })
+    .catch(error => console.error(error));
+});
+
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  </body>
+</html>
