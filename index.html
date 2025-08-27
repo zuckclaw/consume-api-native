@@ -19,7 +19,7 @@
       </div>
     </div>
 
-    <table class="table table-striped table-bordered mb-3 align-middle">
+    <table class="table-striped table-bordered mb-3 align-middle">
       <thead>
         <tr>
           <th>No</th>
@@ -32,6 +32,7 @@
       <tbody id="userTable"></tbody>
     </table>
 
+    <!-- Modal Tambah -->
     <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -87,11 +88,51 @@
                   <td>${item.sinopsis}</td>
                   <td>${item.tahun_rilis}</td>
                   <td>
-                    <button type="button" class="btn btn-danger btn-sm" 
+                    <!-- Tombol Edit -->
+                    <button type="button" class="btn btn-warning btn-sm d-flex mb-2 d-inline d-flex me-2"
+                            data-bs-toggle="modal" data-bs-target="#editModal${item.id}">
+                      Edit
+                    </button>
+
+                    <!-- Tombol Delete -->
+                    <button type="button" class="btn btn-danger btn-sm d-inline d-flex me-2" 
                             data-bs-toggle="modal" data-bs-target="#deleteModal${item.id}">
                       Delete
                     </button>
 
+                    <!-- Edit Modal -->
+                    <div class="modal fade" id="editModal${item.id}" tabindex="-1" aria-labelledby="editLabel${item.id}" aria-hidden="true">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <form onsubmit="updateUser(event, ${item.id})">
+                            <div class="modal-header">
+                              <h5 class="modal-title" id="editLabel${item.id}">Edit Film</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                              <div class="mb-3">
+                                <label class="form-label">Judul</label>
+                                <input type="text" class="form-control" name="judul" value="${item.judul}" required>
+                              </div>
+                              <div class="mb-3">
+                                <label class="form-label">Sinopsis</label>
+                                <input type="text" class="form-control" name="sinopsis" value="${item.sinopsis}" required>
+                              </div>
+                              <div class="mb-3">
+                                <label class="form-label">Tahun Rilis</label>
+                                <input type="text" class="form-control" name="tahun_rilis" value="${item.tahun_rilis}" required>
+                              </div>
+                            </div>
+                            <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                              <button type="submit" class="btn btn-success">Update</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Delete Modal -->
                     <div class="modal fade" id="deleteModal${item.id}" tabindex="-1" 
                          aria-labelledby="deleteLabel${item.id}" aria-hidden="true">
                       <div class="modal-dialog">
@@ -101,7 +142,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                           </div>
                           <div class="modal-body">
-                            Yakin ingin menghapus <b>${item.id}</b>?
+                            Yakin ingin menghapus <b>${item.judul}</b>?
                           </div>
                           <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -137,6 +178,26 @@
           renderTable(); 
         })
         .catch(error => console.error('Error deleting user:', error));
+      }
+
+      function updateUser(e, id) {
+        e.preventDefault();
+        let form = e.target;
+        let formData = new FormData(form);
+        let data = Object.fromEntries(formData.entries());
+
+        fetch(`http://localhost:8000/api/film/update.php?id=${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+          console.log('User updated:', result);
+          renderTable();
+          bootstrap.Modal.getInstance(document.getElementById(`editModal${id}`)).hide();
+        })
+        .catch(error => console.error('Error updating user:', error));
       }
 
       document.getElementById('addForm').addEventListener('submit', function(e) {
